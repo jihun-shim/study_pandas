@@ -5,17 +5,42 @@
 
 
 from pymongo import MongoClient
+import pandas as pd
 
 client = MongoClient('mongodb://python_jupyternote_mongo-mongodb-1:27017')
 db_name = client['pandas_db']
 
 missing_value = db_name['stock_list']
 
-find_data = missing_value.find(
-                                {'구분':'변경후'}
-                                )
+find_data = list(missing_value.find({'구분':'변경후'}))
 
+find_data_first = pd.DataFrame(find_data)
 
-print(find_data)
+#결측치 넣기
+find_data_first['new스마트폰'] = find_data_first['스마트폰.1'].fillna(find_data_first['스마트폰'])
 
+#NaN 제거
+find_data_first = find_data_first.dropna(subset=['new스마트폰'])
+pass
 
+def add_elements_df(data_bundle):
+    result = data_bundle['HTS']+data_bundle['new스마트폰']
+    return result
+    pass
+
+find_data_first['HTS+new스마트폰'] = find_data_first.apply(add_elements_df, axis=1)
+pass
+
+find_data_first = find_data_first.dropna(subset=['HTS+new스마트폰'])
+pass
+
+find_data_first_mean = find_data_first['HTS+new스마트폰'].mean()
+pass
+
+filter_data = find_data_first[find_data_first['HTS+new스마트폰']>find_data_first_mean]
+pass
+
+import os
+current_directory = os.getcwd()
+output_path = os.path.join(current_directory, "datasets", "Compare_stocktradingfees_missingvalues.csv")
+filter_data.to_csv(output_path)
