@@ -16,31 +16,52 @@ find_data = list(missing_value.find({'구분':'변경후'}))
 
 find_data_first = pd.DataFrame(find_data)
 
-#결측치 넣기
-find_data_first['new스마트폰'] = find_data_first['스마트폰.1'].fillna(find_data_first['스마트폰'])
+def add_elements_df(data_row, data_col_one, data_col_two):
+    # 결측치(NaN)가 있으면 data_col_one 값을 data_col_two 로 채우기
+    if pd.notna(data_row[data_col_two]):
+        return data_row[data_col_two]
+    else:
+        return data_row[data_col_one]
 
-#NaN 제거
-find_data_first = find_data_first.dropna(subset=['new스마트폰'])
+# 스마트폰 결측치 넣기
+def add_elements_sp(data_row):
+    return add_elements_df(data_row, '스마트폰', '스마트폰.1')
+
+find_data_first['new_스마트폰'] = find_data_first.apply(add_elements_sp, axis=1)
+
+# HTS 결측치 넣기
+def add_elements_hts(data_row):
+    return add_elements_df(data_row, 'HTS', 'HTS.1')
+
+find_data_first['new_HTS'] = find_data_first.apply(add_elements_hts, axis=1)
+
+# NaN값 제거
+find_data_first = find_data_first.dropna(subset=['new_스마트폰','new_HTS'])
+
+# 열 작성
+def new_hts_스마트폰(data_row):
+    return data_row['new_HTS'] + data_row['new_스마트폰']
+
+find_data_first['new_HTS_스마트폰'] = find_data_first.apply(new_hts_스마트폰, axis=1)
+
+# 평균 값 내기
+find_data_first_mean = find_data_first['new_HTS_스마트폰'].mean()
 pass
 
-def add_elements_df(data_bundle):
-    result = data_bundle['HTS']+data_bundle['new스마트폰']
-    return result
-    pass
-
-find_data_first['HTS+new스마트폰'] = find_data_first.apply(add_elements_df, axis=1)
-pass
-
-find_data_first = find_data_first.dropna(subset=['HTS+new스마트폰'])
-pass
-
-find_data_first_mean = find_data_first['HTS+new스마트폰'].mean()
-pass
-
-filter_data = find_data_first[find_data_first['HTS+new스마트폰']>find_data_first_mean]
-pass
+# 평균 이상인 데이터만 필터링
+filter_data = find_data_first[find_data_first['new_HTS_스마트폰']>find_data_first_mean]
 
 import os
 current_directory = os.getcwd()
 output_path = os.path.join(current_directory, "datasets", "Compare_stocktradingfees_missingvalues.csv")
 filter_data.to_csv(output_path)
+
+'''
+부족한점
+아직 혼자서 함수를 작성하지 못함 
+특정부분이상 가면 어떻게 만들어야 할지 생각이 안남
+
+결국
+GPT 도움 받아 작성 
+함수작성 하는 방법 등등 다시보고 연습하기...
+'''
